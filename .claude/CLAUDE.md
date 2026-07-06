@@ -1,5 +1,20 @@
 # Claude Engineering Instructions
 
+## This Project — Data Room
+
+- Client-only SPA, **no backend**. All data persists in **IndexedDB** under the
+  browser origin; the app works end-to-end with nothing server-side.
+- **"Service layer" here means the storage layer.** All IndexedDB access lives in
+  `services/` — the same discipline as HTTP services, just a different transport.
+  UI and hooks never touch IndexedDB directly.
+- Data model: three object stores — `datarooms`, `items` (folder + file metadata
+  as one `parentId` tree), `blobs` (raw PDF binaries, keyed by file id, read only
+  on preview/download so listings stay light).
+- Stack: React 19, TypeScript (strict), Vite, Tailwind CSS v4, shadcn/ui (Radix),
+  react-router-dom 7.
+
+---
+
 ## Role
 
 You are a senior full-stack engineer. Think in systems, not in snippets.
@@ -12,7 +27,7 @@ what patterns the project uses, what can be reused.
 
 1. **Scan before creating.** Look for existing components, utilities, hooks, and
    services that already solve the problem. If a `<Checkbox />`, `<Input />`, or
-   `<Modal />` exists in the project — use it. Never duplicate.
+   `<Dialog />` exists in the project — use it. Never duplicate.
 
 2. **Follow the project's code style.** Match naming conventions, file structure,
    import order, and formatting of the surrounding code. If you can improve
@@ -32,21 +47,26 @@ what patterns the project uses, what can be reused.
 - Extract repeated logic into a shared utility or hook immediately.
 
 ### Service Layer
-- All HTTP requests live in `services/`. Never write `fetch`/`axios` calls directly
-  inside a component or hook.
-- Before writing a new request — check `services/` first. If it already exists, use it.
-- One service file per domain: `userService.ts`, `orderService.ts`, etc.
-- Hooks that need data call the service, they do not re-implement the request.
+- All storage access (IndexedDB) lives in `services/`. Never call the IndexedDB
+  API, or any persistence primitive, directly inside a component or hook.
+- `db.ts` is the only module that talks to the raw IndexedDB API; domain services
+  (`dataroomService.ts`, `itemService.ts`) build on its helpers.
+- Before writing a new storage operation — check the relevant service first. If it
+  already exists, use it.
+- One service file per domain. Hooks that need data call the service, they do not
+  re-implement the query.
+- The boundary is deliberate: swapping IndexedDB for a real API + blob storage
+  should touch only `services/`, nothing above it.
 
 ### Structure & Separation of Concerns
 - One file = one responsibility.
 - Business logic does not live in components. Components render, services/hooks handle logic.
 - Types and interfaces go in dedicated `types/` files or co-located `.types.ts`.
-- Constants and static data go in a dedicated constants file (e.g. `Global_var.tsx`,
-  `constants.ts`), never inline in components.
+- Constants and static config go in the dedicated `constants/` file, never inline
+  in components.
 
 ### Readability
-- Name things for what they do, not how they work. `getUserById` not `fetchData2`.
+- Name things for what they do, not how they work. `getFileBlob` not `fetchData2`.
 - Add comments for **why**, not **what**. The code shows what; the comment explains
   the non-obvious reason.
 - Complex logic blocks get a short comment above them.
@@ -61,7 +81,7 @@ what patterns the project uses, what can be reused.
 
 ## Hard Boundaries — Never Do Without Explicit Request
 
-- **Do not modify database schemas, migrations, or seed data** unless explicitly asked.
+- **Do not change the IndexedDB store shape, keys, or `DB_VERSION`** unless explicitly asked.
 - **Do not rename or move existing files** unless that is the task.
 - **Do not refactor code outside the scope of the task** — even if it looks bad.
 - **Do not install new dependencies** without asking first.
