@@ -76,26 +76,32 @@ export function DataroomPage() {
   }
 
   const handleUpload = async (files: File[]) => {
-    const { created, skipped } = await itemService.uploadFiles(
-      dataroomId,
-      currentFolderId,
-      files,
-    )
-    if (created.length > 0) {
-      await dataroomService.touch(dataroomId)
-      await reload()
-      toast.success(
-        created.length === 1
-          ? `Uploaded “${created[0].name}”`
-          : `Uploaded ${created.length} files`,
+    try {
+      const { created, skipped } = await itemService.uploadFiles(
+        dataroomId,
+        currentFolderId,
+        files,
       )
-    }
-    if (skipped.length > 0) {
-      toast.error(
-        skipped.length === 1
-          ? `${skipped[0].name}: ${skipped[0].reason}`
-          : `${skipped.length} files skipped (only PDFs up to 50 MB are allowed)`,
-      )
+      if (created.length > 0) {
+        await dataroomService.touch(dataroomId)
+        await reload()
+        toast.success(
+          created.length === 1
+            ? `Uploaded “${created[0].name}”`
+            : `Uploaded ${created.length} files`,
+        )
+      }
+      if (skipped.length > 0) {
+        toast.error(
+          skipped.length === 1
+            ? `${skipped[0].name}: ${skipped[0].reason}`
+            : `${skipped.length} files skipped (only PDFs up to 50 MB are allowed)`,
+        )
+      }
+    } catch (err) {
+      // e.g. IndexedDB write failure / storage quota exceeded.
+      console.error('Upload failed', err)
+      toast.error('Upload failed — your files could not be saved. Please try again.')
     }
   }
 
@@ -142,21 +148,27 @@ export function DataroomPage() {
   }
 
   const handleDownload = async (item: Item) => {
-    const blob = await itemService.getFileBlob(item.id)
-    if (!blob) {
-      toast.error('This file could not be found.')
-      return
+    try {
+      const blob = await itemService.getFileBlob(item.id)
+      if (!blob) {
+        toast.error('This file could not be found.')
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = item.name
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      // Defer revocation: some browsers (Firefox, older Safari) fetch the blob
+      // asynchronously, so revoking on the same tick can cancel the download.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (err) {
+      // e.g. IndexedDB read failure.
+      console.error('Download failed', err)
+      toast.error('Could not download this file. Please try again.')
     }
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = item.name
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    // Defer revocation: some browsers (Firefox, older Safari) fetch the blob
-    // asynchronously, so revoking on the same tick can cancel the download.
-    setTimeout(() => URL.revokeObjectURL(url), 10_000)
   }
 
   /* ---- Drag & drop upload ---- */
