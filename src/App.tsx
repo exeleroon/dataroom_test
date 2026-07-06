@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { MainLayout } from '@/components/layout/MainLayout'
-import { DataroomsPage } from '@/pages/dataRoom/DataroomsPage'
+import { DataroomsPage } from '@/pages/home/DataroomsPage'
 import { DataroomPage } from '@/pages/dataRoom/DataroomPage'
 import { NotFoundPage } from '@/pages/dataRoom/NotFoundPage'
 
