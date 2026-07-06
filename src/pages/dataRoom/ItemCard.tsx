@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
 import { Download, Eye, Folder, FileText, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 
 import type { Item } from '@/types'
 import { isFile } from '@/types'
+import { cn } from '@/lib/utils'
 import { formatBytes, formatDate, formatRelativeTime } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,8 +20,13 @@ interface ItemCardProps {
   onRename: (item: Item) => void
   onDelete: (item: Item) => void
   onDownload: (item: Item) => void
-  /** When set (e.g. in search results), shown in place of the size/date meta. */
-  location?: string
+  /**
+   * When set (e.g. in search results), shown in place of the size/date meta.
+   * Accepts a node so callers can render a clickable path breadcrumb.
+   */
+  location?: ReactNode
+  /** Briefly emphasizes the card, e.g. after jumping to it from search. */
+  highlighted?: boolean
 }
 
 /**
@@ -33,16 +40,14 @@ export function ItemCard({
   onDelete,
   onDownload,
   location,
+  highlighted = false,
 }: ItemCardProps) {
   const file = isFile(item)
-  const meta =
-    location ??
-    (file
-      ? `${formatBytes(item.size)} · ${formatRelativeTime(item.updatedAt)}`
-      : `Updated ${formatRelativeTime(item.updatedAt)}`)
 
   return (
     <div
+      // Stable id so the folder view can scroll to / highlight a specific item.
+      id={`item-${item.id}`}
       role="button"
       tabIndex={0}
       onClick={() => onOpen(item)}
@@ -55,7 +60,10 @@ export function ItemCard({
           onOpen(item)
         }
       }}
-      className="group relative flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={cn(
+        'group relative flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        highlighted && 'border-primary bg-primary/10 ring-2 ring-primary/60',
+      )}
     >
       <span
         className={
@@ -71,12 +79,19 @@ export function ItemCard({
         <p className="truncate font-medium" title={item.name}>
           {item.name}
         </p>
-        <p
-          className="truncate text-xs text-muted-foreground"
-          title={location ? undefined : formatDate(item.updatedAt)}
-        >
-          {meta}
-        </p>
+        {location != null ? (
+          // Search context: the location breadcrumb manages its own layout.
+          <div className="mt-0.5 text-xs text-muted-foreground">{location}</div>
+        ) : (
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title={formatDate(item.updatedAt)}
+          >
+            {file
+              ? `${formatBytes(item.size)} · ${formatRelativeTime(item.updatedAt)}`
+              : `Updated ${formatRelativeTime(item.updatedAt)}`}
+          </p>
+        )}
       </div>
 
       <DropdownMenu>

@@ -159,6 +159,26 @@ instead of being duplicated per entity.
 
 ---
 
+## AI usage
+
+This project was built with an AI coding agent, but as a tool under direction — not
+as an autopilot. The split of responsibility:
+
+- **I owned the design.** The architecture (service-layer boundary, single-`items`
+  tree with a `parentId` pointer, blobs stored apart from metadata) and the
+  edge-case behaviour (duplicate-name suffixing vs. inline rename errors, mixed/oversized
+  upload handling, recursive delete counts, stale-URL "Not found", blob-URL revocation)
+  were decisions I made and specified.
+- **The agent executed** those decisions — scaffolding, wiring, and filling in the
+  implementation against that spec.
+- **I reviewed and corrected** the output: reading every change, catching defects,
+  and driving fixes rather than accepting generated code as-is.
+- **The rules the agent works under live in [`.claude/CLAUDE.md`](.claude/CLAUDE.md)** —
+  the project's engineering conventions (no duplication, service layer, separation of
+  concerns, hard boundaries) are written there and the agent is held to them.
+
+---
+
 ## Tech stack
 React 19 · TypeScript (strict) · Vite 7 · Tailwind CSS v4 · shadcn/ui (Radix) ·
 react-router-dom 7 · sonner · lucide-react · IndexedDB.

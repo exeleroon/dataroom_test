@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FolderPlus, Inbox, UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -58,6 +58,32 @@ export function DataroomPage() {
   useEffect(() => {
     setQuery('')
   }, [currentFolderId])
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+
+  // A `?highlight=<id>` param (set by following a search result's path) asks us
+  // to reveal one item here: leave search, then scroll to it and flag it briefly.
+  // Consume the param immediately so a refresh can't re-trigger the effect.
+  useEffect(() => {
+    const id = searchParams.get('highlight')
+    if (!id) return
+    setQuery('')
+    setHighlightedId(id)
+    searchParams.delete('highlight')
+    setSearchParams(searchParams, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  // Once the target item is on screen, scroll it into view and drop the emphasis
+  // after 5s. Depends on `items` so it retries when the folder's contents load.
+  useEffect(() => {
+    if (!highlightedId) return
+    document
+      .getElementById(`item-${highlightedId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const timer = window.setTimeout(() => setHighlightedId(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [highlightedId, items])
 
   const [newFolderOpen, setNewFolderOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<Item | null>(null)
@@ -260,6 +286,7 @@ export function DataroomPage() {
           results={searchResults}
           query={matchedQuery}
           ready={searchReady}
+          dataroomId={dataroomId}
           dataroomName={dataroom?.name ?? 'Dataroom'}
           onOpen={handleOpen}
           onRename={setRenameTarget}
@@ -293,6 +320,7 @@ export function DataroomPage() {
               <ItemCard
                 key={item.id}
                 item={item}
+                highlighted={item.id === highlightedId}
                 onOpen={handleOpen}
                 onRename={setRenameTarget}
                 onDelete={openDelete}
