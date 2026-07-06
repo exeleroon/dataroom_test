@@ -33,6 +33,17 @@ npm run typecheck  # type-check only
 
 ---
 
+## Deployment
+
+A fully static SPA — it deploys to any static host. It's set up for **Netlify**:
+import the repo at [app.netlify.com](https://app.netlify.com) → **Add new site →
+Import an existing project**, then deploy. `netlify.toml` supplies the build
+settings (build `npm run build`, publish `dist`) and the SPA redirect so
+client-side routes (e.g. `/d/:id`) resolve on refresh or direct load instead of
+404-ing.
+
+---
+
 ## What you can do
 
 **Datarooms**
@@ -94,20 +105,22 @@ src/
     itemService.ts      folder/file CRUD, upload, recursive delete, breadcrumbs
   hooks/        React state that calls services and exposes { data, status, refresh }
   types/        domain model + type guards
-  lib/          pure utilities (cn, id, naming, byte/date formatting)
+  lib/          pure utilities (cn, id, naming, byte/date/relative-time formatting)
   constants/    static config (accepted types, size limit)
   components/
     ui/                 shadcn/ui primitives
+    layout/             app shell (header + main layout)
     NameDialog.tsx      one reusable single-field dialog (create + rename)
     ConfirmDialog.tsx   one reusable confirmation (all deletes)
     EmptyState.tsx      one reusable empty/error placeholder
-  features/     feature-specific, presentational components (cards, viewer…)
-  pages/        route screens compose hooks + features
+    SearchInput.tsx     one reusable search field (list filter + tree search)
+  pages/        route screens + their presentational pieces (cards, PDF viewer,
+                breadcrumbs, search results), grouped under pages/dataRoom/
 ```
 Components render; **services and hooks hold the logic**. UI never calls storage
-directly. Reusable pieces (`NameDialog`, `ConfirmDialog`, `EmptyState`, `ItemCard`)
-are extracted so create/rename/delete flows share one implementation instead of
-being duplicated per entity.
+directly. Reusable pieces (`NameDialog`, `ConfirmDialog`, `EmptyState`, `SearchInput`,
+`ItemCard`) are extracted so create/rename/delete flows share one implementation
+instead of being duplicated per entity.
 
 ### Edge cases handled
 - **Duplicate names** — creating a folder or uploading a file auto-suffixes on
